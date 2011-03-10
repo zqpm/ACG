@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, urllib2
-sys.path.append('jianfan')
+import sys, os, urllib2
 from BeautifulSoup import BeautifulSoup as bs
+
+sys.path.append('jianfan')
 from jianfan import jtof
 
 #debugp = True
@@ -62,11 +63,27 @@ class sfacg:
         # debug counter
         #tmpct = 0
         for idx in self.chps:
-            f = open(idx[0] + "_" + self.fec + ".txt","w")
+            fname = idx[0] + "_" + self.fec + ".txt"
+            if os.path.exists(fname):
+                continue
+            f = open(fname,"w")
             chplink       = sfacg.SFACG3G_URL + idx[1]
             print "Downloading ... ", idx[0], idx[2]
             self.response = urllib2.urlopen(chplink)
-            hj            = self.response.read().replace('<BR>','\n').replace('&nbsp;',' ')
+            hj = self.response.read()
+            hj = hj.replace('<BR>','\n')
+            hj = hj.replace('<br />','\n')
+            hj = hj.replace('&amp;','&')
+            hj = hj.replace('&nbsp;',' ')
+            hj = hj.replace('&quot;','"')
+            hj = hj.replace('&hellip;','…')
+            hj = hj.replace('&middot;','·')
+            hj = hj.replace('&lt;','<')
+            hj = hj.replace('&gt;','>')
+            hj = hj.replace('&ldquo;','“')
+            hj = hj.replace('&rdquo;','”')
+            hj = hj.replace('&lsquo;','‘')
+            hj = hj.replace('&rsquo;','’')
             chpsp         = bs(hj)
             debug_print(chpsp.body.text.encode('utf-8'))
             f.write(jtof(chpsp.body.text).encode(self.fec,"ignore"))
