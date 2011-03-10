@@ -3,7 +3,7 @@
 from sfacg3g import sfacg
 
 def main():
-    a = sfacg('index')
+    a = sfacg('index','big5')
     a.download()
 
 if __name__ == '__main__':

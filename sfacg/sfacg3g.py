@@ -27,8 +27,9 @@ class sfacg:
     # light novel list
     LNV_LIST    = {'index': '2729'}
 
-    def __init__(self, lnv):
+    def __init__(self, lnv, fec):
         self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] + '/MainIndex/'
+        self.fec      = fec
         self.req      = urllib2.Request(self.lnv,"", sfacg.OPERA_X_H)
         self.response = urllib2.urlopen(self.req)
         # use BeautifulSoup
@@ -39,33 +40,38 @@ class sfacg:
         ctr_vol = -1
         self.chps = list()
 
+        fl = open("list.txt","w")
         # print sub-chapters
         for ali in self.soup.ul.findAll('li'):
             if ali.strong == None:
                 ctr_vol += 1
-                self.chps.append((str(ctr_chp) + '-' + str(ctr_vol), ali.a['href'].encode('utf-8'), ali.text.encode('utf-8')))
-                debug_print(str(ctr_chp) + '-' + str(ctr_vol) + ' ' + ali.text.encode('utf-8') + ' ' + ali.a['href'].encode('utf-8'))
+                self.chps.append((str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0'), ali.a['href'].encode('utf-8'), ali.text.encode('utf-8')))
+                debug_print(str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0') + ' ' + ali.text.encode('utf-8') + ' ' + ali.a['href'].encode('utf-8'))
             else:
                 if ctr_vol != 0:
                     ctr_chp += 1
                 ctr_vol = 0
-                debug_print(str(ctr_chp) + ' ' + ali.text.encode('utf-8'))
+                debug_print(str(ctr_chp).rjust(3,'0') + ' ' + ali.text.encode('utf-8'))
+            fl.write(str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0') +' ' + jtof(ali.text).encode(self.fec,"ignore") + '\n')
+        fl.close()
         self.soup.close()
         return 
 
     def download(self):
         """single test"""
-        tmpct = 0
+        # debug counter
+        #tmpct = 0
         for idx in self.chps:
-            f = open(idx[0]+".txt","w")
+            f = open(idx[0] + "_" + self.fec + ".txt","w")
             chplink       = sfacg.SFACG3G_URL + idx[1]
             print "Downloading ... ", idx[0], idx[2]
             self.response = urllib2.urlopen(chplink)
             hj            = self.response.read().replace('<BR>','\n').replace('&nbsp;',' ')
             chpsp         = bs(hj)
             debug_print(chpsp.body.text.encode('utf-8'))
-            f.write(jtof(chpsp.body.text).encode('utf-8'))
+            f.write(jtof(chpsp.body.text).encode(self.fec,"ignore"))
             f.close()
-            tmpct += 1
-            if tmpct == 1:
-                break
+            # debuging
+            #tmpct += 1
+            #if tmpct == 1:
+            #    break
