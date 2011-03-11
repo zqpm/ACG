@@ -26,7 +26,10 @@ class sfacg:
     OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; en) Presto/2.4.13 Version/10.00'
     OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, 'Referer': SFACG3G_URL}
     # light novel list
-    LNV_LIST    = {'index': '2729'}
+    LNV_LIST = {'index': '2729'}
+    LNV_LIST['baga']  = '3029'
+    LNV_LIST['spicenwolf']  = '2662'
+    LNV_LIST['fmp']  = '2339'
 
     def __init__(self, lnv, fec):
         self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] + '/MainIndex/'
@@ -84,7 +87,7 @@ class sfacg:
             hj = hj.replace('&rdquo;','”')
             hj = hj.replace('&lsquo;','‘')
             hj = hj.replace('&rsquo;','’')
-            chpsp         = bs(hj)
+            chpsp = bs(hj)
             debug_print(chpsp.body.text.encode('utf-8'))
             f.write(jtof(chpsp.body.text).encode(self.fec,"ignore"))
             f.close()
