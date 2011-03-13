@@ -26,7 +26,7 @@ def update100(num=10,comic=0):
     for i in range(0,num):
         print soup.body('table')[9]('a')[2*i+1].string  # name
     if comic != 0:
-        return soup.body('table')[9]('a')[2*(comic-1)+1].string  # url and bookface
+        return soup.body('table')[9]('a')[2*(comic-1)+1].string # url/bookface
 
 
 def kkdmdl_dlimg(suburl,name):
@@ -65,7 +65,8 @@ def kkdmdl_dlimg(suburl,name):
             else:
                 break
         except IOError, e:
-            print "Warning: Retrived %s error \nsleep(5) and do it again" % img_link
+            print "Warning: Retrived %s error \nsleep(5) and do it again" \
+                   % img_link
             time.sleep(5)
             img.retrieve(img_link, name)
     #debug
@@ -88,9 +89,9 @@ def getbooklist(rdidx, url):
     soup = bs(html) 
 
     r_table = soup.body('table')[8]('dd')            # round table
-
                                                      # comic url
-    try:                                             # 1 means: use no.2 mirror site
+                                                     # 1 means:
+    try:                                             #  use no.2 mirror site
         c_url = r_table[rdidx - 1]('a')[1]['href']   # (1,2,3,4) are available
         print "Comic Vol: ", r_table[rdidx -1]('a')[0].string
     except:
@@ -179,12 +180,12 @@ def kkdmdl_dlvol(args):
     global PREFIX_IMG_SET 
 
     for i in args: 
-        url        = getbooklist(int(i), COMIC_RT)   # url of current comic page 
-        n_url      = url                               # url of next comic page
-                                                                                    
-        page_count = 1                                 # page count
-        filename   = str(page_count)                   # setting the filename
-        filename   = filename.rjust(3,'0')             # fill with '0' in 3 digits
+        url        = getbooklist(int(i), COMIC_RT)# url of current comic page 
+        n_url      = url                          # url of next comic page
+                                                                               
+        page_count = 1                            # page count
+        filename   = str(page_count)              # setting the filename
+        filename   = filename.rjust(3,'0')        # fill with '0' in 3 digits
         vol        = str(i).rjust(3,'0')
                                                                                     
         while ( n_url != "http://comic.kukudm.com/exit/exit.htm" ):
@@ -228,11 +229,15 @@ def main():
 
     aprs = OptionParser("%prog [option] arg1 arg2 ...", version="%prog v0.1")
 
-    aprs.add_option("-c", "--comic",             dest="comic",     help="indicate which comic ..")
-    aprs.add_option("-s", "--start", type="int", dest="start",     help="vol start from ..")
-    aprs.add_option("-e", "--end", type="int",   dest="end",       help="vol end from ..")
-    aprs.add_option("-d", action="store_true",   dest="divided", default=False, help="devided download ..")
-    aprs.add_option("-u", action="store_true",   dest="update",  default=False, help="list latest 100 updates ..")
+    aprs.add_option("-c", "--comic", dest="comic", help="indicate comic ..")
+    aprs.add_option("-s", "--start", type="int", dest="start", \
+                    help="vol start from ..")
+    aprs.add_option("-e", "--end", type="int", dest="end", \
+                    help="vol end from ..")
+    aprs.add_option("-d", action="store_true", dest="divided", default=False,\
+                    help="devided download ..")
+    aprs.add_option("-u", action="store_true", dest="update", default=False, \
+                    help="list latest 100 updates ..")
 
     opts, args = aprs.parse_args()
     opts = opts.__dict__

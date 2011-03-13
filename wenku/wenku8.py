@@ -23,8 +23,10 @@ class wenku8:
     # wenku8 light novel website prefix
     WENKU8_PREFIX = 'http://www.wenku8.cn/modules/article/reader.php?'
     # use UA of mobile browswer 
-    OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; en) Presto/2.4.13 Version/10.00'
-    OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, 'Referer': WENKU8_PREFIX}
+    OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; \
+                   en) Presto/2.4.13 Version/10.00'
+    OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, \
+                   'Referer': WENKU8_PREFIX}
     # light novel list
     LNV_LIST = {}
     LNV_LIST['spicenwolf']  = 'aid=5'
@@ -53,7 +55,8 @@ class wenku8:
                 lk = tsp.a['href']
                 title = unicode(tsp.contents[0])[:-1]
                 self.chps.append((sn,lk,title))
-                fl.write( sn.encode(fec, 'ignore') + '.txt' + ' ' + title.encode(fec, 'ignore') + '\n')
+                fl.write(sn.encode(fec, 'ignore') + '.txt' + ' ' \
+                         + title.encode(fec, 'ignore') + '\n')
         tsp.close()
         fl.close()
         self.soup.close()
@@ -81,7 +84,8 @@ class wenku8:
             chttl = chpsp.findAll('div',{'class':'chaptertitle'})
             chcnt = chpsp.findAll('div',{'class':'chaptercontent'})
             for vol in range(len(chttl) -1):
-                f.write(jtof(chttl[vol].text).encode(self.fec,'ignore').lstrip())
+                atl = jtof(chttl[vol].text).encode(self.fec,'ignore').lstrip()
+                f.write(atl)
                 f.write('\n==========\n')
                 f.write(jtof(chcnt[vol].text).encode(self.fec,'ignore'))
                 f.write('\n\n\n\n')

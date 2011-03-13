@@ -23,8 +23,10 @@ class sfacg:
     # sfacg light novel website prefix
     SFACG3G_URL = 'http://3g.sfacg.com'
     # use UA of mobile browswer 
-    OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; en) Presto/2.4.13 Version/10.00'
-    OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, 'Referer': SFACG3G_URL}
+    OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; \
+                   en) Presto/2.4.13 Version/10.00'
+    OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, \
+                   'Referer': SFACG3G_URL}
     # light novel list
     LNV_LIST = {'index': '2729'}
     LNV_LIST['baga']  = '3029'
@@ -32,7 +34,8 @@ class sfacg:
     LNV_LIST['fmp']  = '2339'
 
     def __init__(self, lnv, fec):
-        self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] + '/MainIndex/'
+        self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] + \
+                        '/MainIndex/'
         self.fec      = fec
         self.req      = urllib2.Request(self.lnv,"", sfacg.OPERA_X_H)
         self.response = urllib2.urlopen(self.req)
@@ -49,14 +52,24 @@ class sfacg:
         for ali in self.soup.ul.findAll('li'):
             if ali.strong == None:
                 ctr_vol += 1
-                self.chps.append((str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0'), ali.a['href'].encode('utf-8'), ali.text.encode('utf-8')))
-                debug_print(str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0') + ' ' + ali.text.encode('utf-8') + ' ' + ali.a['href'].encode('utf-8'))
+                appendchps = str(ctr_chp).rjust(3,'0') + '-' + \
+                             str(ctr_vol).rjust(3,'0'), \
+                             ali.a['href'].encode('utf-8'), \
+                             ali.text.encode('utf-8')
+                self.chps.append(appendchps)
+                debug_print(str(ctr_chp).rjust(3,'0') + '-' + \
+                             str(ctr_vol).rjust(3,'0') + ' ' + \
+                             ali.text.encode('utf-8') + ' ' + \
+                             ali.a['href'].encode('utf-8'))
             else:
                 if ctr_vol != 0:
                     ctr_chp += 1
                 ctr_vol = 0
-                debug_print(str(ctr_chp).rjust(3,'0') + ' ' + ali.text.encode('utf-8'))
-            fl.write(str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0') +' ' + jtof(ali.text).encode(self.fec,"ignore") + '\n')
+                debug_print(str(ctr_chp).rjust(3,'0') + ' ' + \
+                        ali.text.encode('utf-8'))
+            fl.write(str(ctr_chp).rjust(3,'0') + '-' + \
+                     str(ctr_vol).rjust(3,'0') +' ' + \
+                     jtof(ali.text).encode(self.fec,"ignore") + '\n')
         fl.close()
         self.soup.close()
         return 
