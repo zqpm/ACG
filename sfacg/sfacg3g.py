@@ -32,10 +32,11 @@ class sfacg:
     LNV_LIST['baga']  = '3029'
     LNV_LIST['spicenwolf']  = '2662'
     LNV_LIST['fmp']  = '2339'
+    LNV_LIST['is']  = '7678'
 
     def __init__(self, lnv, fec):
-        self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] + \
-                        '/MainIndex/'
+        self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] \
+                        + '/MainIndex/'
         self.fec      = fec
         self.req      = urllib2.Request(self.lnv,"", sfacg.OPERA_X_H)
         self.response = urllib2.urlopen(self.req)

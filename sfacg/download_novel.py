@@ -16,8 +16,8 @@ def main():
     if opts['update'] == True:
         pass
     else:
-        #a = sfacg(opts['novel'],'big5')
-        a = sfacg(opts['novel'],'utf-8')
+        a = sfacg(opts['novel'],'big5')
+        #a = sfacg(opts['novel'],'utf-8')
         a.download()
 
 if __name__ == '__main__':
