@@ -9,8 +9,11 @@ from jianfan import jtof
 
 #debugp = True
 debugp = False
+SRC_URL = 'http://www.wenku8.cn/modules/article/reader.php?'
+WENKU_N_LST = {}  
+WENKU_N_LST['index']       = 'aid=3'
+WENKU_N_LST['spicenwolf']  = 'aid=5'
 
-#SFACG3G_INDEX = WENKU8_PREFIX + '/Novel/2729/MainIndex/'
 def debug_print(str):
     global debugp
     if debugp == True: 
@@ -21,16 +24,14 @@ def debug_print(str):
 class wenku8:
     """wenku8 light novel"""
     # wenku8 light novel website prefix
-    WENKU8_PREFIX = 'http://www.wenku8.cn/modules/article/reader.php?'
+    SFACG3G_URL = SRC_URL
     # use UA of mobile browswer 
     OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; \
                    en) Presto/2.4.13 Version/10.00'
     OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, \
                    'Referer': WENKU8_PREFIX}
     # light novel list
-    LNV_LIST = {}
-    LNV_LIST['spicenwolf']  = 'aid=5'
-    LNV_LIST['index']  = 'aid=3'
+    LNV_LIST = WENKU_N_LST
 
     def __init__(self, lnv, fec):
         self.lnv      = wenku8.WENKU8_PREFIX + wenku8.LNV_LIST[lnv]
@@ -61,6 +62,7 @@ class wenku8:
         fl.close()
         self.soup.close()
         return 
+        
     def download(self, unit=[]):
         if len(unit) == 0:
             unit = self.chps
@@ -80,6 +82,7 @@ class wenku8:
             hj = self.rm_spchar(self.response.read())
             chpsp = bs(hj)
             chpsp = self.rm_spam(chpsp)
+            # format output by wehku
             # get title/content
             chttl = chpsp.findAll('div',{'class':'chaptertitle'})
             chcnt = chpsp.findAll('div',{'class':'chaptercontent'})

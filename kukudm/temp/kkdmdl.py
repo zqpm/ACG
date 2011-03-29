@@ -7,8 +7,12 @@ from optparse import OptionParser, OptionGroup
 from BeautifulSoup import BeautifulSoup as bs
 
 TMP_FOLDER = '/dev/shm/'
-PREFIX_IMG1 = "http://ascrsbdtdb.kukudm.net:82/"
-PREFIX_IMG2 = "http://ascrsbdfdb.kukudm.net:81/"
+PREFIX_LST = []
+PREFIX_LST.append("http://ascrsbdtdb.kukudm.net:82/")
+PREFIX_LST.append("http://ascrsbdfdb.kukudm.net:81/")
+PREFIX_LST.append("http://dx.kukudm.net/")
+                
+#PREFIX_LST.append("")
 
 PREFIX_WEBSITE = "http://comic.kukudm.com"
 
@@ -36,15 +40,14 @@ class kkdm_img:
                     time.sleep(5)
                     img.retrieve(self.url, self.fname)
                 raise RuntimeError("404, prefix problem") 
-    def __del__(self):
-        print "remove img: %s" % self.fname
-        if os.path.exists(self.fname):
-            os.remove(self.fname)
+    #def __del__(self):
+    #    print "remove img: %s" % self.fname
+    #    if os.path.exists(self.fname):
+    #        os.remove(self.fname)
 
 class kkdm_vol:
     """kukudm vol page"""
-    global PREFIX_IMG1
-    global PREFIX_IMG2
+    global PREFIX_LST
     url  = ''
     path = ''
     vol  = str()
@@ -79,23 +82,21 @@ class kkdm_vol:
                 print "Changing the prefix ..."
                 self.pfx = self.chgpfx()
                 continue
-
             self.img.append(image)
             n_url = self.get_np_link(sp)
             if n_url == "http://comic.kukudm.com/exit/exit.htm":
                 break
-
             page_count += 1                                              
             sp          = bs(urllib2.urlopen(n_url).read())
+            
     def chgpfx(self):
-        pfxlist = [PREFIX_IMG1, PREFIX_IMG2]
         if self.pfx == '':
-            return pfxlist[0]
+            return PREFIX_LST[0]
         else :
-            for i in range(len(pfxlist)):
-                if self.pfx != pfxlist[i]:
-                    continue
-                return pfxlist[((i+1)%len(pfxlist))]
+            for i in range(len(PREFIX_LST)):
+                if self.pfx == PREFIX_LST[i]:
+                    break;
+            return PREFIX_LST[((i+1)%len(PREFIX_LST))]
     def get_img_link(self,esp,ere):
         jimg = esp.body('table')[1]('td')[0]('script')[0]
         jimgidx = ere.finditer(str(jimg))
@@ -111,10 +112,10 @@ class kkdm_vol:
         nextimg_sublink = esp.findAll('a')[lenofidx - 1]['href']
         n_url = PREFIX_WEBSITE + nextimg_sublink
         return n_url
-    def __del__(self):
-        print "removing vol dir: %s" % self.path
-        if os.path.exists(self.path):
-            os.removedirs(self.path) 
+    #def __del__(self):
+    #    print "removing vol dir: %s" % self.path
+    #    if os.path.exists(self.path):
+    #        os.removedirs(self.path) 
 
 class kkdm_comic:
     """kukudm comic index"""
@@ -122,39 +123,46 @@ class kkdm_comic:
     comic_url = ''
     comic_path = ''
     vol = []
+    comic_list = {}  
+    # initial
     def __init__(self,comic='',vols=[]):
         if comic != '':
-            self.comic = comic
-            self.comic_url = self.get_book_url(comic)
-            comic_path = TMP_FOLDER + comic
+            self.comic = comic                           # set comic name
+            self.comic_url = self.get_book_url(comic)    # set comci url
+            comic_path = TMP_FOLDER + self.comic         # set download folder
+            if len(vols) == 0:
+                sp = bs(urllib2.urlopen(self.comic_url).read())            
+                r_table = sp.body('table')[8]('dd')             
+                nvol = str(len(r_table))
+                vols.append(nvol)
             for ci in vols:
-                curl = self.get_vol_url(self.comic_url,int(ci))
-                self.vol.append(kkdm_vol(curl,comic_path,int(ci)))
+                c_url = self.get_vol_url(self.comic_url,int(ci))
+                self.vol.append(kkdm_vol(c_url,comic_path,int(ci)))
                 self.zipit(int(ci))
-
+    # get url of the comic
     def get_book_url(self, cname):
-        if cname == "red":
-            return  "http://comic.kukudm.com/comiclist/514/index.htm"  #red
-        elif cname == "town":
-            return  "http://comic.kukudm.com/comiclist/672/index.htm"  #town 
-        elif cname == "wolf":
-            return  "http://comic.kukudm.com/comiclist/536/index.htm"  #wolf
-        elif cname == "flysky":
-            return "http://comic.kukudm.com/comiclist/1005/index.htm"  #flysky
-        elif cname == "rome":
-            return "http://comic.kukudm.com/comiclist/975/index.htm"   #rome
-        elif cname == "mathgirl":
-            return "http://comic.kukudm.com/comiclist/997/index.htm"   #mathgirl
-        else:
-            print "kkdmdl doest not support %s" % cname
-            sys.exit(0)
+        self.comic_list['red']      = '514'
+        self.comic_list['town']     = '672'
+        self.comic_list['wolf']     = '536'
+        self.comic_list['flysky']   = '1005'
+        self.comic_list['rome']     = '975'
+        self.comic_list['mathgirl'] = '997'
+        self.comic_list['naruto']   = '3'
+        self.comic_list['onepiece'] = '4'
+        #error handle not be done.
+        rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
+               "/index.htm"
+        return rtn
     def get_vol_url(self, url, vol):
         sp = bs(urllib2.urlopen(url).read())                # need time
         r_table = sp.body('table')[8]('dd')                 # round table
+        # try all mirro site
         for mi in [1,2,3,4]:
             try:
                 c_url = r_table[vol - 1]('a')[mi]['href']   # (1,2,3,4) are available
-                print "Comic Vol: %s" % r_table[vol - 1]('a')[0].string
+                opstr =  "Comic Vol(" + str(vol) + "):" + \
+                          r_table[vol - 1]('a')[0].string
+                print opstr
                 break
             except:
                 print "Error: vol mirror (%d/4)error" % mi
@@ -183,23 +191,28 @@ class kkdm_comic:
             print "comic not 0"
             return soup.body('table')[9]('a')  # url and bookface
             #return soup.body('table')[9]('a')[2*(comic-1)+1].string  # url and bookface
-
-    def __del__(self):
-        if self.comic == '':
-            return
-        print "remove comic folder: %s" %self.comic_path
-        if os.path.exists(self.comic_path):
-            os.removedirs(self.comic_path)
+    #def __del__(self):
+    #    if self.comic == '':
+    #        return
+    #    print "remove comic folder: %s" %self.comic_path
+    #    if os.path.exists(self.comic_path):
+    #        os.removedirs(self.comic_path)
 
 
 def main():
     aprs = OptionParser("%prog [option] arg1 arg2 ...", version="%prog v0.1")
-    aprs.add_option("-c", "--comic",             dest="comic",     help="indicate which comic ..")
-    aprs.add_option("-s", "--start", type="int", dest="start",     help="vol start from ..")
-    aprs.add_option("-e", "--end", type="int",   dest="end",       help="vol end from ..")
-    aprs.add_option("-d", action="store_true",   dest="divided", default=False, help="devided download ..")
-    aprs.add_option("-l", action="store_true",   dest="latest",  default=False, help="latest vol ..")
-    aprs.add_option("-u", action="store_true",   dest="update",  default=False, help="list latest 100 updates ..")
+    aprs.add_option("-c", "--comic", dest="comic",
+                    help="indicate which comic ..")
+    aprs.add_option("-s", "--start", type="int", dest="start",
+                    help="vol start from ..")
+    aprs.add_option("-e", "--end", type="int", dest="end",
+                    help="vol end from ..")
+    aprs.add_option("-d", action="store_true", dest="divided", default=False, 
+                    help="devided download ..")
+    aprs.add_option("-l", action="store_true", dest="latest",  default=False, 
+                    help="latest vol ..")
+    aprs.add_option("-u", action="store_true", dest="update",  default=False, 
+                    help="list latest 100 updates ..")
     opts, args = aprs.parse_args()
     opts = opts.__dict__
 
@@ -209,7 +222,11 @@ def main():
         if opts["divided"] == True:
             x = kkdm_comic(opts["comic"],args)
         elif opts["divided"] == False:
-            x = kkdm_comic(opts["comic"],range(opts["start"], opts["end"] + 1))
+            if opts["latest"] == False:
+                x = kkdm_comic(opts["comic"], range(opts["start"], 
+                               opts["end"] + 1))
+            else:
+                x = kkdm_comic(opts["comic"])
 
 if __name__ == '__main__':
     main()

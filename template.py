@@ -1,71 +1,61 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import sys, os, urllib2
 from BeautifulSoup import BeautifulSoup as bs
-
 sys.path.append('jianfan')
 from jianfan import jtof
 
-#debugp = True
-debugp = False
-SRC_URL = 'http://3g.sfacg.com'
-SF_N_LST = {}  
-SF_N_LST['index']      = '2729'
-SF_N_LST['baga']       = '3029'
-SF_N_LST['spicenwolf'] = '2662'
-SF_N_LST['fmp']        = '2339'
-SF_N_LST['is']         = '7678'
 
+LNV_LIST = {}           # novel list
 
-def debug_print(str):
+# debug print
+def dbpt(str):
     global debugp
     if debugp == True: 
         print str
     else:
         return
 
-class sfacg:
-    """sfacg light novel"""
-    # sfacg light novel website prefix
-    SFACG3G_URL = SRC_URL
-    # use UA of mobile browswer 
+def sfacg_getlist(bs, fec):
+    nlist = []
+    # chapter/volume counter
+    ctr_chp = 0
+    ctr_vol = -1
+    fl = open('list' + '_' + fec + '.txt','w')
+    for ali in bs.ul.findAll('li'):
+        # check <strong> tag, it's not content
+        if ali.strong == None:
+            ctr_vol += 1
+        else:
+            if ctr_vol != 0:
+                ctr_chp += 1
+            ctr_chp = 0
+        sn    = str(ctr_chp).rjust(3,'0') + '-' + str(ctr_vol).rjust(3,'0')
+        lk    = ali.a['href'].encode('utf-8')
+        title = ali.text.encode('utf-8')
+        nlist.append((sn,lk,title))
+    fl.close()
+    return nlist
+
+
+
+# novel class
+class novel:
+    """novel website module"""
     OPERA_X_UA  = 'Opera/9.80 (Windows Mobile; WCE; Opera Mobi/WMD-50286; U; \
                    en) Presto/2.4.13 Version/10.00'
-    OPERA_X_H   = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA, \
-                   'Referer': SFACG3G_URL}
-    # light novel list
-    LNV_LIST = SF_N_LST
 
-    def __init__(self, lnv, fec):
-        self.lnv      = sfacg.SFACG3G_URL + '/Novel/' + sfacg.LNV_LIST[lnv] \
-                        + '/MainIndex/'
+    def __init__(self, lnv, fec, url):
+        self.SRC_URL  = url
+        OPERA_X_H     = {'Accept-Charset': 'utf-8', 'User-Agent' : OPERA_X_UA,\
+                         'Referer': SRC_URL}
+        self.lnv      = self.SRC_URL + '/Novel/' \
+                        + novel.LNV_LIST[lnv] + '/MainIndex/'
         self.fec      = fec
-        self.req      = urllib2.Request(self.lnv,"", sfacg.OPERA_X_H)
+        self.req      = urllib2.Request(self.lnv,"", novel.OPERA_X_H)
         self.response = urllib2.urlopen(self.req)
-        # use BeautifulSoup
-        self.soup     = bs(self.response)
-
-        # chapter/volume counter
-        ctr_chp = 0
-        ctr_vol = -1
-        self.chps = list()
-
-        fl = open('list' + '_' + self.fec + '.txt','w')
-        for ali in self.soup.ul.findAll('li'):
-            # check <strong> tag, it's not content
-            if ali.strong == None:
-                ctr_vol += 1
-            else:
-                if ctr_vol != 0:
-                    ctr_chp += 1
-                ctr_vol = 0
-            sn = str(ctr_chp).rjust(3,'0') + '-' \
-                 + str(ctr_vol).rjust(3,'0')
-            lk = ali.a['href'].encode('utf-8')
-            title = ali.text.encode('utf-8')
-            self.chps.append((sn,lk,title))
-        fl.close()
+        self.soup     = bs(self.response)               
+        self.chps     = getlist(self.soup, fec)
         self.soup.close()
         return 
 
@@ -82,16 +72,21 @@ class sfacg:
 
             if os.path.exists(fname):
                 continue
-            f = open(fname,'w')
-            chplink = sfacg.SFACG3G_URL + idx[1]
             print 'Downloading', idx[2], '>>> ', fname
+            f             = open(fname,'w')
+            chplink       = self.SRC_URL + idx[1]
             self.response = urllib2.urlopen(chplink)
-            hj = self.rm_spchar(self.response.read())
-            chpsp = bs(hj)
+            processed     = self.dosomething(self.response.read())
+            chpsp         = bs(processed)
             # format output by sfacg
             f.write(jtof(chpsp.body.text).encode(self.fec,"ignore"))
             f.close()
         return
+    # do some processing
+    def dosomething(self,str):
+        str = self.rm_spchar(str)
+        return str
+    # replace HTML special character
     def rm_spchar(self,str):
         str = str.replace('<BR>','')
         str = str.replace('<br>','')
@@ -112,8 +107,8 @@ class sfacg:
             str = str.replace('\n\n','\n')
         elif self.fec == 'big5':
             str = str.replace('\r\n\r\n','\r\n')
-            
         return str
+    # remove javascript ad
     def rm_spam(self,sp):
         for jsp in sp.findAll('script'):
             jsp.extract()
