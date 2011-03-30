@@ -161,14 +161,11 @@ class kkdm_comic:
     # get url of the comic
     def get_book_url(self, cname):
         self.comic_list['red']      = '514'
-        self.comic_list['town']     = '672'
-        self.comic_list['wolf']     = '536'
-        self.comic_list['flysky']   = '1005'
         self.comic_list['rome']     = '975'
-        self.comic_list['mathgirl'] = '997'
         self.comic_list['naruto']   = '3'
         self.comic_list['onepiece'] = '4'
         self.comic_list['firephoenix'] = '277'
+        self.comic_list['real'] = '168'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
@@ -193,23 +190,26 @@ class kkdm_comic:
                 continue
         return c_url
     def zipit(self,zname):
-    # use console command 'zip' to zip files
-        zname = str(zname).rjust(3,'0') 
-        zfname = zname + '.zip'
-        command = 'zip -jq %(s1)s %(s2)s%(s3)s/%(s4)s/*' % \
-                  {"s1":zfname ,"s2":TMP_FOLDER, "s3":self.comic , "s4":zname}
-
-        #print command
-        try:
-            os.system(command)
-            print "Comic ZIP File: %s saved." % zfname
-        except Exception, e:
-            print e
-            print "Error: zip fail!"
+        volname = str(volname).rjust(3,'0') 
+        zfname = volname + '.zip'
+        if os.path.exists(zfname):
+            return
+        oldpath = os.getcwd()
+        newpath = TMP_FOLDER + self.comic + '/' + volname
+        zf = zipfile.ZipFile(zfname, mode='w') 
+        os.chdir(newpath)
+        imgfiles = os.listdir('./')
+        imgfiles.reverse()
+        for i in imgfiles:
+            zf.write(i)
+        zf.close()
+        os.chdir(oldpath)
+        img = os.listdir('./')
+        print "Comic ZIP File: %s saved." % zfname
         return 
     def update100(self,num=10,comic=0):
         url = 'http://comic.kukudm.com/top100.htm'
-        req= urllib2.Request(url,"",kkdm_comic.hder)
+        req= urllib2.Request(url, None, kkdm_comic.hder)
         response = urllib2.urlopen(req)
         sp = bs(response.read())
         #sp = bs(urllib2.urlopen(url).read())
@@ -219,7 +219,7 @@ class kkdm_comic:
         if comic != 0:
             print "comic not 0"
             return sp.body('table')[9]('a')  # url and bookface
-            #return soup.body('table')[9]('a')[2*(comic-1)+1].string  # url and bookface
+
     #def __del__(self):
     #    if self.comic == '':
     #        return
@@ -229,7 +229,13 @@ class kkdm_comic:
 
 
 def main():
-    aprs = OptionParser("%prog [-c comic|-u][option] arg1 arg2 ...", version="%prog b1.1")
+    howto = '%prog [-c comic|-u][option] arg1 arg2 ...\n\n\
+      \nRange vol download: \n\t %prog -c <comic> -s <start vol> -e <end vol> \
+      \nDivided vol download: \n\t %prog -c <comic> -d vol1 [vol2 [vol3..] ] \
+      \nLastest vol download: \n\t %prog -c <comic> -l \
+      \nShow Lastest Update: \n\t %prog -u [counts=10]'
+
+    aprs = OptionParser(usage=howto, version="%prog b1.1")
     aprs.add_option("-c", "--comic", dest="comic",
                     help="indicate which comic ..")
     aprs.add_option("-s", "--start", type="int", dest="start",
@@ -245,17 +251,20 @@ def main():
     opts, args = aprs.parse_args()
     opts = opts.__dict__
 
-    if opts["update"] == True:
-        kkdm_comic().update100(int(args[0]))
+    if opts["update"]:
+        if len(args) == 0: 
+            kkdm_comic().update100()
+        else:
+            kkdm_comic().update100(int(args[0]))
     else:
-        if opts["divided"] == True:
+        if opts["divided"]:
             x = kkdm_comic(opts["comic"],args)
-        elif opts["divided"] == False:
-            if opts["latest"] == False:
+        elif not opts["divided"]:
+            if opts["latest"]:
+                x = kkdm_comic(opts["comic"])
+            else:
                 x = kkdm_comic(opts["comic"], range(opts["start"], 
                                opts["end"] + 1))
-            else:
-                x = kkdm_comic(opts["comic"])
 
 if __name__ == '__main__':
     main()
