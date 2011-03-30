@@ -11,6 +11,8 @@ PREFIX_LST = []
 PREFIX_LST.append("http://ascrsbdtdb.kukudm.net:82/")
 PREFIX_LST.append("http://ascrsbdfdb.kukudm.net:81/")
 PREFIX_LST.append("http://dx.kukudm.net/")
+BROWSER_UA = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US) AppleWebKit/534.10 \
+              (KHTML, like Gecko) Chrome/8.0.552.237 Safari/534.10'
                 
 #PREFIX_LST.append("")
 
@@ -24,7 +26,8 @@ class kkdm_img:
         self.url   = url
         subname    = url.split('/')[-1].split('.')[-1] 
         self.fname = path + '/' + str(page).rjust(3,'0') + '.' + subname
-        self.dl()
+        if (not os.path.exists(self.fname))or(os.path.getsize(self.fname) < 500):
+            self.dl()
     def dl(self):
         img = urllib.URLopener()
         while 1: 
@@ -48,18 +51,24 @@ class kkdm_img:
 class kkdm_vol:
     """kukudm vol page"""
     global PREFIX_LST
+    global BROWSER_UA
     url  = ''
     path = ''
     vol  = str()
     pfx  = ''
     img  = []
+    hder = {'User-Agent': BROWSER_UA, 'Referer': 'http://kukudm.com/'}
     def __init__(self, url, path, vol):
         self.url  = url
         self.vol  = str(vol)
         self.pfx  = self.chgpfx()
         self.path = path + '/' + str(vol).rjust(3,'0') 
-        # init local variable
-        sp  = bs(urllib2.urlopen(url).read())
+
+        req= urllib2.Request(url, None, kkdm_vol.hder)
+        response = urllib2.urlopen(req)
+        sp = bs(response.read())
+        #sp  = bs(urllib2.urlopen(url).read()) # non header version
+
         jre = re.compile(r""" 
                 [(document.write)]
                 (.)*
@@ -78,8 +87,8 @@ class kkdm_vol:
             try:
                 image = kkdm_img(img_link,self.path, page_count)
             except RuntimeError, e:
-                print e
-                print "Changing the prefix ..."
+                print e,
+                print ", Changing the prefix ..."
                 self.pfx = self.chgpfx()
                 continue
             self.img.append(image)
@@ -87,7 +96,10 @@ class kkdm_vol:
             if n_url == "http://comic.kukudm.com/exit/exit.htm":
                 break
             page_count += 1                                              
-            sp          = bs(urllib2.urlopen(n_url).read())
+            req= urllib2.Request(n_url, None, kkdm_vol.hder)
+            response = urllib2.urlopen(req)
+            sp = bs(response.read())
+            #sp = bs(urllib2.urlopen(n_url).read())
             
     def chgpfx(self):
         if self.pfx == '':
@@ -119,25 +131,32 @@ class kkdm_vol:
 
 class kkdm_comic:
     """kukudm comic index"""
+    global BROWSER_UA
     comic = ''
     comic_url = ''
     comic_path = ''
     vol = []
     comic_list = {}  
+    hder = {'User-Agent': BROWSER_UA, 'Referer': 'http://kukudm.com/'}
+
     # initial
-    def __init__(self,comic='',vols=[]):
+    def __init__(self, comic='', vols=[]):
         if comic != '':
             self.comic = comic                           # set comic name
             self.comic_url = self.get_book_url(comic)    # set comci url
-            comic_path = TMP_FOLDER + self.comic         # set download folder
+            comic_patz = TMP_FOLDER + self.comic         # set download folder
             if len(vols) == 0:
-                sp = bs(urllib2.urlopen(self.comic_url).read())            
+                req= urllib2.Request(self.comic_url, None, kkdm_comic.hder)
+                response = urllib2.urlopen(req)
+                sp = bs(response.read())
+                #sp = bs(urllib2.urlopen(self.comic_url).read())            
+
                 r_table = sp.body('table')[8]('dd')             
                 nvol = str(len(r_table))
                 vols.append(nvol)
             for ci in vols:
-                c_url = self.get_vol_url(self.comic_url,int(ci))
-                self.vol.append(kkdm_vol(c_url,comic_path,int(ci)))
+                c_url = self.get_vol_url(self.comic_url, int(ci))
+                self.vol.append(kkdm_vol(c_url, comic_patz, int(ci)))
                 self.zipit(int(ci))
     # get url of the comic
     def get_book_url(self, cname):
@@ -149,12 +168,17 @@ class kkdm_comic:
         self.comic_list['mathgirl'] = '997'
         self.comic_list['naruto']   = '3'
         self.comic_list['onepiece'] = '4'
+        self.comic_list['firephoenix'] = '277'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
         return rtn
     def get_vol_url(self, url, vol):
-        sp = bs(urllib2.urlopen(url).read())                # need time
+        req = urllib2.Request(url, None, kkdm_comic.hder)
+        response = urllib2.urlopen(req).read()
+        sp = bs(response)
+        #sp = bs(urllib2.urlopen(url).read())
+
         r_table = sp.body('table')[8]('dd')                 # round table
         # try all mirro site
         for mi in [1,2,3,4]:
@@ -172,7 +196,9 @@ class kkdm_comic:
     # use console command 'zip' to zip files
         zname = str(zname).rjust(3,'0') 
         zfname = zname + '.zip'
-        command = 'zip -jq %(s1)s %(s2)s%(s3)s/%(s4)s/*' % {"s1":zfname ,"s2":TMP_FOLDER, "s3":self.comic , "s4":zname}
+        command = 'zip -jq %(s1)s %(s2)s%(s3)s/%(s4)s/*' % \
+                  {"s1":zfname ,"s2":TMP_FOLDER, "s3":self.comic , "s4":zname}
+
         #print command
         try:
             os.system(command)
@@ -182,14 +208,17 @@ class kkdm_comic:
             print "Error: zip fail!"
         return 
     def update100(self,num=10,comic=0):
-        html = urllib2.urlopen('http://comic.kukudm.com/top100.htm')
-        soup = bs(html.read())
+        url = 'http://comic.kukudm.com/top100.htm'
+        req= urllib2.Request(url,"",kkdm_comic.hder)
+        response = urllib2.urlopen(req)
+        sp = bs(response.read())
+        #sp = bs(urllib2.urlopen(url).read())
 
         for i in range(0,num):
-            print soup.body('dd')[i]('a')[1].string                    # name
+            print sp.body('dd')[i]('a')[1].string                    # name
         if comic != 0:
             print "comic not 0"
-            return soup.body('table')[9]('a')  # url and bookface
+            return sp.body('table')[9]('a')  # url and bookface
             #return soup.body('table')[9]('a')[2*(comic-1)+1].string  # url and bookface
     #def __del__(self):
     #    if self.comic == '':
@@ -200,7 +229,7 @@ class kkdm_comic:
 
 
 def main():
-    aprs = OptionParser("%prog [option] arg1 arg2 ...", version="%prog v0.1")
+    aprs = OptionParser("%prog [-c comic|-u][option] arg1 arg2 ...", version="%prog b1.1")
     aprs.add_option("-c", "--comic", dest="comic",
                     help="indicate which comic ..")
     aprs.add_option("-s", "--start", type="int", dest="start",
