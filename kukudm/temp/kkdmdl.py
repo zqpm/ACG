@@ -189,7 +189,7 @@ class kkdm_comic:
                 print "Error: vol mirror (%d/4)error" % mi
                 continue
         return c_url
-    def zipit(self,zname):
+    def zipit(self,volname):
         volname = str(volname).rjust(3,'0') 
         zfname = volname + '.zip'
         if os.path.exists(zfname):
