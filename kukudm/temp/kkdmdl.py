@@ -27,6 +27,7 @@ class kkdm_img:
         subname    = url.split('/')[-1].split('.')[-1] 
         self.fname = path + '/' + str(page).rjust(3,'0') + '.' + subname
         if (not os.path.exists(self.fname))or(os.path.getsize(self.fname) < 500):
+            print "retrieving the comic: %s" % self.fname
             self.dl()
     def dl(self):
         img = urllib.URLopener()
