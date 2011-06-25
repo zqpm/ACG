@@ -29,6 +29,7 @@ class kkdm_img:
         if (not os.path.exists(self.fname))or(os.path.getsize(self.fname) < 500):
             print "retrieving the comic: %s" % self.fname
             self.dl()
+
     def dl(self):
         img = urllib.URLopener()
         while 1: 
@@ -42,7 +43,8 @@ class kkdm_img:
                 if e[1] != 404:
                     print "Warning: Retrieve %s Error.\ntime.sleep(5) and again" %self.url
                     time.sleep(5)
-                    img.retrieve(self.url, self.fname)
+                    #img.retrieve(self.url, self.fname)
+                    continue
                 raise RuntimeError("404, prefix problem") 
     #def __del__(self):
     #    print "remove img: %s" % self.fname
@@ -66,7 +68,14 @@ class kkdm_vol:
         self.path = path + '/' + str(vol).rjust(3,'0') 
 
         req= urllib2.Request(url, None, kkdm_vol.hder)
-        response = urllib2.urlopen(req)
+        while 1:
+            try:
+                response = urllib2.urlopen(req)
+                break
+            except urllib2.URLError, e:
+                print "samuel: (error msg):",e
+                continue
+
         sp = bs(response.read())
         #sp  = bs(urllib2.urlopen(url).read()) # non header version
 
@@ -87,18 +96,28 @@ class kkdm_vol:
             img_link = self.get_img_link(sp,jre)
             try:
                 image = kkdm_img(img_link,self.path, page_count)
-            except RuntimeError, e:
+            except Exception, e:
                 print e,
                 print ", Changing the prefix ..."
                 self.pfx = self.chgpfx()
                 continue
             self.img.append(image)
             n_url = self.get_np_link(sp)
+
             if n_url == "http://comic.kukudm.com/exit/exit.htm":
                 break
             page_count += 1                                              
+
             req= urllib2.Request(n_url, None, kkdm_vol.hder)
-            response = urllib2.urlopen(req)
+            while 1:
+                try:
+                    response = urllib2.urlopen(req)
+                    break
+                except urllib2.URLError, e:
+                    print "samuel: (error msg):",e
+                    continue
+
+            
             sp = bs(response.read())
             #sp = bs(urllib2.urlopen(n_url).read())
             
@@ -146,8 +165,8 @@ class kkdm_comic:
             self.comic = comic                           # set comic name
             self.comic_url = self.get_book_url(comic)    # set comci url
             comic_patz = TMP_FOLDER + self.comic         # set download folder
+            req= urllib2.Request(self.comic_url, None, kkdm_comic.hder)
             if len(vols) == 0:
-                req= urllib2.Request(self.comic_url, None, kkdm_comic.hder)
                 response = urllib2.urlopen(req)
                 sp = bs(response.read())
                 #sp = bs(urllib2.urlopen(self.comic_url).read())            
@@ -167,6 +186,7 @@ class kkdm_comic:
         self.comic_list['onepiece'] = '4'
         self.comic_list['firephoenix'] = '277'
         self.comic_list['real'] = '168'
+        self.comic_list['prison'] = '1087'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
