@@ -187,14 +187,27 @@ class kkdm_comic:
         self.comic_list['firephoenix'] = '277'
         self.comic_list['real'] = '168'
         self.comic_list['prison'] = '1087'
+        self.comic_list['tooth'] = '1167'
+        self.comic_list['godnote'] = '914'
+        self.comic_list['flower'] = '1172'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
         return rtn
     def get_vol_url(self, url, vol):
         req = urllib2.Request(url, None, kkdm_comic.hder)
-        response = urllib2.urlopen(req).read()
-        sp = bs(response)
+
+        while 1:
+            try:
+                response = urllib2.urlopen(req)
+                break
+            except urllib2.URLError, e:
+                print "samuel: (error msg):",e
+                continue
+
+
+
+        sp = bs(response.read())
         #sp = bs(urllib2.urlopen(url).read())
 
         r_table = sp.body('table')[8]('dd')                 # round table
