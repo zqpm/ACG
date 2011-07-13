@@ -190,6 +190,7 @@ class kkdm_comic:
         self.comic_list['tooth'] = '1167'
         self.comic_list['godnote'] = '914'
         self.comic_list['flower'] = '1172'
+        self.comic_list['wrc'] = '789'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
