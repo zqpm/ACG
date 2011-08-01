@@ -5,9 +5,12 @@ import urllib,urllib2
 import tarfile,zipfile
 from optparse import OptionParser, OptionGroup
 from BeautifulSoup import BeautifulSoup as bs
+import tempfile
+import shutil
 
-TMP_FOLDER = '/dev/shm/'
-PREFIX_LST = []
+KUKUDM_FOLDER_PFX = 'kukudm_'
+TMP_FOLDER = tempfile.mkdtemp(prefix=KUKUDM_FOLDER_PFX) + '/'
+PREFIX_LST = list()
 PREFIX_LST.append("http://ascrsbdtdb.kukudm.net:82/")
 PREFIX_LST.append("http://ascrsbdfdb.kukudm.net:81/")
 PREFIX_LST.append("http://dx.kukudm.net/")
@@ -17,6 +20,19 @@ BROWSER_UA = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US) AppleWebKit/534.10 \
 #PREFIX_LST.append("")
 
 PREFIX_WEBSITE = "http://comic.kukudm.com"
+
+CLEAR_FLD = list()
+def cleanup():
+    TMP_PREFIX = tempfile.gettempdir()
+    for i in os.listdir(TMP_PREFIX) :
+        search_pattern = '^(' + KUKUDM_FOLDER_PFX + ')(.+)'
+        m = re.search(search_pattern,i) 
+        if m:
+            CLEAR_FLD.append(m.group())
+    for j in CLEAR_FLD:
+        TO_BE_DELETED = TMP_PREFIX + '/' + j
+        shutil.rmtree(TO_BE_DELETED)
+
 
 class kkdm_img:
     """kukudm img"""
@@ -46,20 +62,16 @@ class kkdm_img:
                     #img.retrieve(self.url, self.fname)
                     continue
                 raise RuntimeError("404, prefix problem") 
-    #def __del__(self):
-    #    print "remove img: %s" % self.fname
-    #    if os.path.exists(self.fname):
-    #        os.remove(self.fname)
 
 class kkdm_vol:
     """kukudm vol page"""
     global PREFIX_LST
     global BROWSER_UA
-    url  = ''
-    path = ''
-    vol  = str()
-    pfx  = ''
-    img  = []
+    #url  = ''
+    #path = ''
+    #vol  = str()
+    pfx  = str()
+    img  = list()
     hder = {'User-Agent': BROWSER_UA, 'Referer': 'http://kukudm.com/'}
     def __init__(self, url, path, vol):
         self.url  = url
@@ -144,19 +156,12 @@ class kkdm_vol:
         nextimg_sublink = esp.findAll('a')[lenofidx - 1]['href']
         n_url = PREFIX_WEBSITE + nextimg_sublink
         return n_url
-    #def __del__(self):
-    #    print "removing vol dir: %s" % self.path
-    #    if os.path.exists(self.path):
-    #        os.removedirs(self.path) 
 
 class kkdm_comic:
     """kukudm comic index"""
     global BROWSER_UA
-    comic = ''
-    comic_url = ''
-    comic_path = ''
-    vol = []
-    comic_list = {}  
+    vol = list()
+    comic_list = dict() 
     hder = {'User-Agent': BROWSER_UA, 'Referer': 'http://kukudm.com/'}
 
     # initial
@@ -164,7 +169,7 @@ class kkdm_comic:
         if comic != '':
             self.comic = comic                           # set comic name
             self.comic_url = self.get_book_url(comic)    # set comci url
-            comic_patz = TMP_FOLDER + self.comic         # set download folder
+            comic_path = TMP_FOLDER + self.comic         # set download folder
             req= urllib2.Request(self.comic_url, None, kkdm_comic.hder)
             if len(vols) == 0:
                 response = urllib2.urlopen(req)
@@ -176,7 +181,7 @@ class kkdm_comic:
                 vols.append(nvol)
             for ci in vols:
                 c_url = self.get_vol_url(self.comic_url, int(ci))
-                self.vol.append(kkdm_vol(c_url, comic_patz, int(ci)))
+                self.vol.append(kkdm_vol(c_url, comic_path, int(ci)))
                 self.zipit(int(ci))
     # get url of the comic
     def get_book_url(self, cname):
@@ -226,7 +231,7 @@ class kkdm_comic:
         return c_url
     def zipit(self,volname):
         volname = str(volname).rjust(3,'0') 
-        zfname = volname + '.zip'
+        zfname = self.comic + '-' + volname + '.zip'
         if os.path.exists(zfname):
             return
         oldpath = os.getcwd()
@@ -250,27 +255,19 @@ class kkdm_comic:
         #sp = bs(urllib2.urlopen(url).read())
 
         for i in range(0,num):
-            print sp.body('dd')[i]('a')[1].string                    # name
+            print sp.body('dd')[i]('a')[1].string  # name
         if comic != 0:
             print "comic not 0"
             return sp.body('table')[9]('a')  # url and bookface
 
-    #def __del__(self):
-    #    if self.comic == '':
-    #        return
-    #    print "remove comic folder: %s" %self.comic_path
-    #    if os.path.exists(self.comic_path):
-    #        os.removedirs(self.comic_path)
-
-
 def main():
-    howto = '%prog [-c comic|-u][option] arg1 arg2 ...\n\n\
-      \nRange vol download: \n\t %prog -c <comic> -s <start vol> -e <end vol> \
-      \nDivided vol download: \n\t %prog -c <comic> -d vol1 [vol2 [vol3..] ] \
-      \nLastest vol download: \n\t %prog -c <comic> -l \
-      \nShow Lastest Update: \n\t %prog -u [counts=10]'
+    howto = '%prog [-c comic|-u][option] arg1 arg2 ...\n\
+      \n\tRange vol download:   \t %prog -c <comic> -s <start vol> -e <end vol> \
+      \n\tDivided vol download: \t %prog -c <comic> -d vol1 [vol2 [vol3..] ] \
+      \n\tLastest vol download: \t %prog -c <comic> -l \
+      \n\tShow Lastest Update:  \t %prog -u [default counts=10]'
 
-    aprs = OptionParser(usage=howto, version="%prog b1.1")
+    aprs = OptionParser(usage=howto, version="%prog beta2.1")
     aprs.add_option("-c", "--comic", dest="comic",
                     help="indicate which comic ..")
     aprs.add_option("-s", "--start", type="int", dest="start",
@@ -292,14 +289,15 @@ def main():
         else:
             kkdm_comic().update100(int(args[0]))
     else:
+        cleanup()
         if opts["divided"]:
             x = kkdm_comic(opts["comic"],args)
-        elif not opts["divided"]:
-            if opts["latest"]:
-                x = kkdm_comic(opts["comic"])
-            else:
-                x = kkdm_comic(opts["comic"], range(opts["start"], 
-                               opts["end"] + 1))
+        elif opts["latest"]:
+            x = kkdm_comic(opts["comic"])
+        else:
+            x = kkdm_comic(opts["comic"], range(opts["start"], 
+                           opts["end"] + 1))
+    shutil.rmtree(TMP_FOLDER)
 
 if __name__ == '__main__':
     main()
