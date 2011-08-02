@@ -11,31 +11,32 @@ import shutil
 KUKUDM_FOLDER_PFX = 'kukudm_'
 TMP_FOLDER = tempfile.mkdtemp(prefix=KUKUDM_FOLDER_PFX) + '/'
 PREFIX_LST = list()
-PREFIX_LST.append("http://ascrsbdtdb.kukudm.net:82/")
-PREFIX_LST.append("http://ascrsbdfdb.kukudm.net:81/")
-PREFIX_LST.append("http://dx.kukudm.net/")
+PREFIX_LST.append('http://ascrsbdtdb.kukudm.net:82/')
+PREFIX_LST.append('http://ascrsbdfdb.kukudm.net:81/')
+PREFIX_LST.append('http://dx.kukudm.net/')
 BROWSER_UA = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US) AppleWebKit/534.10 \
               (KHTML, like Gecko) Chrome/8.0.552.237 Safari/534.10'
                 
-#PREFIX_LST.append("")
 
 PREFIX_WEBSITE = "http://comic.kukudm.com"
 
 CLEAR_FLD = list()
 def cleanup():
-    TMP_PREFIX = tempfile.gettempdir()
+    '''cleanup the temp folder ever used'''
+    global CLEAR_FLD
+    TMP_PREFIX = tempfile.gettempdir() + '/'
     for i in os.listdir(TMP_PREFIX) :
         search_pattern = '^(' + KUKUDM_FOLDER_PFX + ')(.+)'
         m = re.search(search_pattern,i) 
         if m:
             CLEAR_FLD.append(m.group())
     for j in CLEAR_FLD:
-        TO_BE_DELETED = TMP_PREFIX + '/' + j
+        TO_BE_DELETED = TMP_PREFIX + j
         shutil.rmtree(TO_BE_DELETED)
 
 
-class kkdm_img:
-    """kukudm img"""
+class kkdm_img(object):
+    """download kukudm img"""
     url   = ''
     fname = ''
     def __init__(self, url, path, page):
@@ -63,8 +64,8 @@ class kkdm_img:
                     continue
                 raise RuntimeError("404, prefix problem") 
 
-class kkdm_vol:
-    """kukudm vol page"""
+class kkdm_vol(object):
+    """kukudm vol"""
     global PREFIX_LST
     global BROWSER_UA
     #url  = ''
@@ -140,7 +141,7 @@ class kkdm_vol:
             for i in range(len(PREFIX_LST)):
                 if self.pfx == PREFIX_LST[i]:
                     break;
-            return PREFIX_LST[((i+1)%len(PREFIX_LST))]
+            return str(PREFIX_LST[((i+1)%len(PREFIX_LST))])
     def get_img_link(self,esp,ere):
         jimg = esp.body('table')[1]('td')[0]('script')[0]
         jimgidx = ere.finditer(str(jimg))
@@ -157,7 +158,7 @@ class kkdm_vol:
         n_url = PREFIX_WEBSITE + nextimg_sublink
         return n_url
 
-class kkdm_comic:
+class kkdm_comic(object):
     """kukudm comic index"""
     global BROWSER_UA
     vol = list()
@@ -185,21 +186,22 @@ class kkdm_comic:
                 self.zipit(int(ci))
     # get url of the comic
     def get_book_url(self, cname):
-        self.comic_list['red']      = '514'
-        self.comic_list['rome']     = '975'
-        self.comic_list['naruto']   = '3'
-        self.comic_list['onepiece'] = '4'
+        self.comic_list['red']         = '514'
+        self.comic_list['rome']        = '975'
+        self.comic_list['naruto']      = '3'
+        self.comic_list['onepiece']    = '4'
         self.comic_list['firephoenix'] = '277'
-        self.comic_list['real'] = '168'
-        self.comic_list['prison'] = '1087'
-        self.comic_list['tooth'] = '1167'
-        self.comic_list['godnote'] = '914'
-        self.comic_list['flower'] = '1172'
-        self.comic_list['wrc'] = '789'
+        self.comic_list['real']        = '168'
+        self.comic_list['prison']      = '1087'
+        self.comic_list['tooth']       = '1167'
+        self.comic_list['godnote']     = '914'
+        self.comic_list['flower']      = '1172'
+        self.comic_list['wrc']         = '789'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
         return rtn
+
     def get_vol_url(self, url, vol):
         req = urllib2.Request(url, None, kkdm_comic.hder)
 
@@ -210,8 +212,6 @@ class kkdm_comic:
             except urllib2.URLError, e:
                 print "samuel: (error msg):",e
                 continue
-
-
 
         sp = bs(response.read())
         #sp = bs(urllib2.urlopen(url).read())
@@ -229,24 +229,29 @@ class kkdm_comic:
                 print "Error: vol mirror (%d/4)error" % mi
                 continue
         return c_url
+
     def zipit(self,volname):
         volname = str(volname).rjust(3,'0') 
-        zfname = self.comic + '-' + volname + '.zip'
+        zfname  = self.comic + '-' + volname + '.zip'
         if os.path.exists(zfname):
             return
         oldpath = os.getcwd()
         newpath = TMP_FOLDER + self.comic + '/' + volname
+
         zf = zipfile.ZipFile(zfname, mode='w') 
         os.chdir(newpath)
+
         imgfiles = os.listdir('./')
         imgfiles.reverse()
         for i in imgfiles:
             zf.write(i)
         zf.close()
+
         os.chdir(oldpath)
         img = os.listdir('./')
         print "Comic ZIP File: %s saved." % zfname
         return 
+
     def update100(self,num=10,comic=0):
         url = 'http://comic.kukudm.com/top100.htm'
         req= urllib2.Request(url, None, kkdm_comic.hder)
