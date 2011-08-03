@@ -3,10 +3,10 @@
 import os,re,sys,string,time
 import urllib,urllib2
 import tarfile,zipfile
-from optparse import OptionParser, OptionGroup
-from BeautifulSoup import BeautifulSoup as bs
 import tempfile
 import shutil
+from optparse import OptionParser, OptionGroup
+from BeautifulSoup import BeautifulSoup as bs
 
 KUKUDM_FOLDER_PFX = 'kukudm_'
 TMP_FOLDER = tempfile.mkdtemp(prefix=KUKUDM_FOLDER_PFX) + '/'
@@ -68,16 +68,12 @@ class kkdm_vol(object):
     """kukudm vol"""
     global PREFIX_LST
     global BROWSER_UA
-    #url  = ''
-    #path = ''
-    #vol  = str()
-    pfx  = str()
     img  = list()
     hder = {'User-Agent': BROWSER_UA, 'Referer': 'http://kukudm.com/'}
     def __init__(self, url, path, vol):
         self.url  = url
         self.vol  = str(vol)
-        self.pfx  = self.chgpfx()
+        self.pfx  = PREFIX_LST[0]
         self.path = path + '/' + str(vol).rjust(3,'0') 
 
         req= urllib2.Request(url, None, kkdm_vol.hder)
@@ -135,13 +131,10 @@ class kkdm_vol(object):
             #sp = bs(urllib2.urlopen(n_url).read())
             
     def chgpfx(self):
-        if self.pfx == '':
-            return PREFIX_LST[0]
-        else :
-            for i in range(len(PREFIX_LST)):
-                if self.pfx == PREFIX_LST[i]:
-                    break;
-            return str(PREFIX_LST[((i+1)%len(PREFIX_LST))])
+        for i in range(len(PREFIX_LST)):
+            if self.pfx == PREFIX_LST[i]:
+                break;
+        return '%s' % PREFIX_LST[((i+1)%len(PREFIX_LST))]
     def get_img_link(self,esp,ere):
         jimg = esp.body('table')[1]('td')[0]('script')[0]
         jimgidx = ere.finditer(str(jimg))
@@ -151,12 +144,12 @@ class kkdm_vol(object):
         # get the key sub-url
         img_sublink = urllib.quote(img_sublink)                           
         img_link = self.pfx + img_sublink
-        return img_link
+        return '%s' % img_link
     def get_np_link(self,esp):
         lenofidx =  len(esp.findAll('a'))
         nextimg_sublink = esp.findAll('a')[lenofidx - 1]['href']
         n_url = PREFIX_WEBSITE + nextimg_sublink
-        return n_url
+        return '%s' % n_url
 
 class kkdm_comic(object):
     """kukudm comic index"""
@@ -200,7 +193,7 @@ class kkdm_comic(object):
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" + self.comic_list[cname] +\
                "/index.htm"
-        return rtn
+        return '%s' % rtn
 
     def get_vol_url(self, url, vol):
         req = urllib2.Request(url, None, kkdm_comic.hder)
@@ -228,7 +221,7 @@ class kkdm_comic(object):
             except:
                 print "Error: vol mirror (%d/4)error" % mi
                 continue
-        return c_url
+        return '%s' % c_url
 
     def zipit(self,volname):
         volname = str(volname).rjust(3,'0') 
@@ -263,7 +256,7 @@ class kkdm_comic(object):
             print sp.body('dd')[i]('a')[1].string  # name
         if comic != 0:
             print "comic not 0"
-            return sp.body('table')[9]('a')  # url and bookface
+            return '%s' % sp.body('table')[9]('a')  # url and bookface
 
 def main():
     howto = '%prog [-c comic|-u][option] arg1 arg2 ...\n\
