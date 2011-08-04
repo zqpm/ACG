@@ -10,15 +10,16 @@ from BeautifulSoup import BeautifulSoup as bs
 
 TMPFOLDERPFX = 'jumpcn_'
 TMP_FOLDER = tempfile.mkdtemp(prefix=TMPFOLDERPFX) + '/'
-#PREFIX_LST = list()
-#PREFIX_LST.append('http://ascrsbdtdb.kukudm.net:82/')
-#PREFIX_LST.append('http://ascrsbdfdb.kukudm.net:81/')
-#PREFIX_LST.append('http://dx.kukudm.net/')
+REAL_IMG_SRC_LIST = list()
+REAL_IMG_SRC_LIST.append('http://www.daoshu.net/pcomic_com_cn/')
+#REAL_IMG_SRC_LIST.append('http://ascrsbdtdb.kukudm.net:82/')
+#REAL_IMG_SRC_LIST.append('http://ascrsbdfdb.kukudm.net:81/')
+#REAL_IMG_SRC_LIST.append('http://dx.kukudm.net/')
 BROWSER_UA = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US) AppleWebKit/534.10 \
               (KHTML, like Gecko) Chrome/8.0.552.237 Safari/534.10'
 
 PREFIX_WEBSITE = 'http://www.jumpcn.com.cn/comic/'
-WEBSITE = 'http://www.jumpcn.com.cn'
+WEBSITE = 'http://www.jumpcn.com.cn/'
 
 CLEAR_FLD = list()
 
@@ -42,7 +43,7 @@ class kkdm_img(object):
         self.url   = url
         subname    = url.split('/')[-1].split('.')[-1] 
         self.fname = path + '/' + str(page).rjust(3,'0') + '.' + subname
-        if (not os.path.exists(self.fname))or(os.path.getsize(self.fname) < 500):
+        if (not os.path.exists(self.fname))or(os.path.getsize(self.fname) < 600):
             print "retrieving the comic: %s" % self.fname
             self.dl()
 
@@ -50,22 +51,21 @@ class kkdm_img(object):
         img = urllib.URLopener()
         while 1: 
             try:
+                print "downloading ... %s" % self.url 
                 img.retrieve(self.url, self.fname)
-                if os.path.getsize(self.fname) < 500:
+                if os.path.getsize(self.fname) < 600:
                     continue
                 else:
                     break
             except IOError, e:
                 if e[1] != 404:
                     print "Warning: Retrieve %s Error.\ntime.sleep(5) and again" %self.url
-                    time.sleep(5)
-                    #img.retrieve(self.url, self.fname)
+                    time.sleep(9)
                     continue
-                raise RuntimeError("404, prefix problem") 
 
 class kkdm_vol(object):
     """kukudm vol"""
-    #global PREFIX_LST
+    global REAL_IMG_SRC_LIST
     global BROWSER_UA
     img  = list()
     hder = {'User-Agent': BROWSER_UA, 'Referer': WEBSITE}
@@ -94,50 +94,27 @@ class kkdm_vol(object):
         v_info = response2.read()
         print v_info
         self.totalpages = re.search('(total=*)(\d)*',v_info).group().split('=')[1]
-        self.sublink = re.search('(volpic=)(.*\')',v_info).group().split('\'')[1]
+        self.sublink = re.search('(volpic=)(.*\')',v_info).group().split('\'')[1].decode('gb2312').encode('utf8')
+        self.sublink = urllib.quote(self.sublink) 
 
         # create vol folder
         if not os.path.exists(self.path):
             os.makedirs(self.path)
         # set the prefix of the vol
         page_count = 1
-        imgo = urllib.URLopener() 
-        n_url = url
 
 
         for page_count in range(int(self.totalpages)):
-            img_url = self.url + self.sublink + str(page_count+1) + '.jpg'
+            img_url = REAL_IMG_SRC_LIST[0] + self.sublink + str(page_count + 1) + '.jpg'
             while True:
                 try: 
-                    image = kkdm_img(img_url,self.path, page_count) 
+                    image = kkdm_img(img_url,self.path, page_count + 1) 
                 except Exception, e:
                     print e
                     print ',(samuel): something wrong here'
                     continue
                 self.img.append(image) 
                 break;
-            
-#    def chgpfx(self):
-#        for i in range(len(PREFIX_LST)):
-#            if self.pfx == PREFIX_LST[i]:
-#                break;
-#        return '%s' % PREFIX_LST[((i+1)%len(PREFIX_LST))]
-#    def get_img_link(self,esp,ere):
-#        jimg = esp.body('table')[1]('td')[0]('script')[0]
-#        jimgidx = ere.finditer(str(jimg))
-#        for out in jimgidx:
-#            haha = out.group() 
-#            img_sublink = haha.split('"')[3].split("'")[0]
-#        # get the key sub-url
-#        img_sublink = urllib.quote(img_sublink)                           
-#        img_link = self.pfx + img_sublink
-#        return '%s' % img_link
-#
-#    def get_np_link(self,esp):
-#        lenofidx =  len(esp.findAll('a'))
-#        nextimg_sublink = esp.findAll('a')[lenofidx - 1]['href']
-#        n_url = PREFIX_WEBSITE + nextimg_sublink
-#        return '%s' % n_url
 
 class kkdm_comic(object):
     """kukudm comic index"""
