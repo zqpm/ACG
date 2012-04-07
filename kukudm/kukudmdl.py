@@ -7,6 +7,7 @@ import string
 import time
 import urllib
 import urllib2
+import cookielib
 import tarfile
 import zipfile
 import tempfile
@@ -17,10 +18,11 @@ from BeautifulSoup import BeautifulSoup as bs
 TMPFOLDERPFX = 'kukudm_'
 TMP_FOLDER = tempfile.mkdtemp(prefix=TMPFOLDERPFX) + '/'
 PREFIX_LST = []
+PREFIX_LST.append('http://cc.kukudm.com/')
+PREFIX_LST.append('http://hzw.socomic.com/')
 PREFIX_LST.append('http://ascrsbdtdb.kukudm.net:82/')
 PREFIX_LST.append('http://ascrsbdfdb.kukudm.net:81/')
 PREFIX_LST.append('http://dx.kukudm.net/')
-PREFIX_LST.append('http://hzw.socomic.com/')
 BROWSER_UA = 'Mozilla/5.0 (X11; U; Linux x86_64; en-US) \
              AppleWebKit/534.10 (KHTML, like Gecko) \
              Chrome/8.0.552.237 Safari/534.10'
@@ -29,6 +31,10 @@ WEBSITE = 'http://kukudm.com/'
 CLEAR_FLD = []
 
 
+cj = cookielib.CookieJar()
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj)) 
+
+urllib2.install_opener(opener)
 def cleanup():
     """ 
     cleanup the temp folder ever used
@@ -77,17 +83,18 @@ class kkdm_img(object):
                     break
             except IOError, e:
                 if e[1] != 404:
-                    print "Warning: Retrieve %s Error." % self.url
-                    print "time.sleep(5) and again" 
+                    print "(samuel)Warning: Retrieve %s Error." % self.url
+                    print "(samuel)time.sleep(5) and again" 
                     time.sleep(5)
                     raise RuntimeError("404, prefix problem") 
                 else:
-                    print "Some Network Problem .."
+                    print "(samuel)Some Network Problem .."
 
 class kkdm_vol(object):
     """kukudm vol"""
     global PREFIX_LST
     global BROWSER_UA
+    global opener
     img  = []
     hder = {'User-Agent': BROWSER_UA, 'Referer': WEBSITE}
 
@@ -96,13 +103,15 @@ class kkdm_vol(object):
         self.vol  = str(vol)
         self.pfx  = PREFIX_LST[0]
         self.path = path + '/' + str(vol).rjust(3,'0') 
-        req= urllib2.Request(url, None, kkdm_vol.hder)
+        #req= urllib2.Request(url, None, kkdm_vol.hder)
         while 1:
             try:
-                response = urllib2.urlopen(req)
+                #response = urllib2.urlopen(req)
+                response = opener.open(url)
                 break
             except urllib2.URLError, e:
-                print "samuel: (error msg):",e
+                print "samuel: (error msg):",e,
+                print "continue, try again"
                 continue
         sp = bs(response.read())
         jre = re.compile(r""" 
@@ -120,7 +129,7 @@ class kkdm_vol(object):
             try:
                 image = kkdm_img(img_link,self.path, page_count)
             except Exception, e:
-                print e,
+                print "(samuel): %s", e,
                 print ", Changing the prefix ..."
                 self.pfx = self.chgpfx()
                 continue
@@ -129,13 +138,15 @@ class kkdm_vol(object):
             if n_url == "http://comic.kukudm.com/exit/exit.htm":
                 break
             page_count += 1                                              
-            req= urllib2.Request(n_url, None, kkdm_vol.hder)
+            #req= urllib2.Request(n_url, None, kkdm_vol.hder)
             while 1:
                 try:
-                    response = urllib2.urlopen(req)
+                    #response = urllib2.urlopen(req)
+                    response = opener.open(n_url)
                     break
                 except urllib2.URLError, e:
-                    print "samuel: (error msg):",e
+                    print "samuel: (error msg):",e,
+                    print "continue, try again"
                     continue
             sp = bs(response.read())
             
@@ -165,6 +176,7 @@ class kkdm_vol(object):
 class kkdm_comic(object):
     """kukudm comic index"""
     global BROWSER_UA
+    global opener
     vol = []
     comic_list = {}
     hder = {'User-Agent': BROWSER_UA, 'Referer': WEBSITE}
@@ -175,9 +187,10 @@ class kkdm_comic(object):
             self.comic = comic                         # set comic name
             self.comic_url = self.get_book_url(comic)  # set comci url
             comic_path = TMP_FOLDER + self.comic       # set dl folder
-            req= urllib2.Request(self.comic_url, None, kkdm_comic.hder)
+            #req= urllib2.Request(self.comic_url, None, kkdm_comic.hder)
             if len(vols) == 0:
-                response = urllib2.urlopen(req)
+                #response = urllib2.urlopen(req)
+                response = opener.open(self.comic_url)
                 sp = bs(response.read())
                 r_table = sp.body('table')[8]('dd')             
                 nvol = str(len(r_table))
@@ -200,6 +213,7 @@ class kkdm_comic(object):
         self.comic_list['godnote']     = '914'
         self.comic_list['flower']      = '1172'
         self.comic_list['wrc']         = '789'
+        self.comic_list['spaceman']    = '1229'
         #error handle not be done.
         rtn = "http://comic.kukudm.com/comiclist/" \
             + self.comic_list[cname] \
@@ -207,13 +221,15 @@ class kkdm_comic(object):
         return '%s' % rtn
 
     def get_vol_url(self, url, vol):
-        req = urllib2.Request(url, None, kkdm_comic.hder)
+        #req = urllib2.Request(url, None, kkdm_comic.hder)
         while 1:
             try:
-                response = urllib2.urlopen(req)
+                #response = urllib2.urlopen(req)
+                response = opener.open(url)
                 break
             except urllib2.URLError, e:
-                print "samuel: (error msg):",e
+                print "samuel: (error msg):",e,
+                print "continue, try again"
                 continue
         sp = bs(response.read())
 
@@ -252,8 +268,9 @@ class kkdm_comic(object):
 
     def update100(self,num=10,comic=0):
         url = 'http://comic.kukudm.com/top100.htm'
-        req= urllib2.Request(url, None, kkdm_comic.hder)
-        response = urllib2.urlopen(req)
+        #req= urllib2.Request(url, None, kkdm_comic.hder)
+        #response = urllib2.urlopen(req)
+        response = opener.open(url)
         sp = bs(response.read())
         for i in range(0,num):
             print sp.body('dd')[i]('a')[1].string  # name
